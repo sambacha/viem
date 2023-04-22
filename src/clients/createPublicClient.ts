@@ -14,10 +14,15 @@ export type MulticallBatchOptions = {
 }
 
 export type PublicClientConfig<
-  TTransport extends Transport = Transport,
-  TChain extends Chain | undefined = Chain | undefined,
+  T extends {
+    Chain: Chain | undefined
+    Transport: Transport
+  } = {
+    Chain: Chain | undefined
+    Transport: Transport
+  },
 > = Pick<
-  ClientConfig<TTransport, TChain>,
+  ClientConfig<T>,
   'chain' | 'key' | 'name' | 'pollingInterval' | 'transport'
 > & {
   /** Flags for batch settings. */
@@ -28,13 +33,24 @@ export type PublicClientConfig<
 }
 
 export type PublicClient<
-  TTransport extends Transport = Transport,
-  TChain extends Chain | undefined = Chain | undefined,
-  TIncludeActions extends boolean = true,
+  T extends {
+    Chain?: Chain | undefined
+    IncludeActions?: boolean
+    Transport?: Transport
+  } = {
+    Chain: Chain | undefined
+    IncludeActions: true
+    Transport: Transport
+  },
 > = Prettify<
+<<<<<<< Updated upstream
   Client<TTransport, PublicRequests, TChain> &
     Pick<PublicClientConfig, 'batch'> &
     (TIncludeActions extends true ? PublicActions<TTransport, TChain> : unknown)
+=======
+  Client<T & { Requests: PublicRequests }> &
+    (T['IncludeActions'] extends true ? PublicActions<T> : unknown)
+>>>>>>> Stashed changes
 >
 
 /**
@@ -66,12 +82,29 @@ export function createPublicClient<
   name = 'Public Client',
   transport,
   pollingInterval,
+<<<<<<< Updated upstream
 }: PublicClientConfig<TTransport, TChain>): PublicClient<
   TTransport,
   TChain,
   true
 > {
   const client = {
+=======
+}: PublicClientConfig<{ Chain: TChain; Transport: TTransport }>): PublicClient<{
+  Chain: TChain
+  IncludeActions: true
+  Transport: TTransport
+}> {
+  const client = createClient({
+    chain,
+    key,
+    name,
+    pollingInterval,
+    transport,
+    type: 'publicClient',
+  }) as PublicClient<{ Chain: TChain; Transport: TTransport }>
+  return {
+>>>>>>> Stashed changes
     batch,
     ...(createClient({
       chain,

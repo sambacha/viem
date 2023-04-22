@@ -127,8 +127,13 @@ import type { PublicClient } from '../createPublicClient.js'
 import type { Transport } from '../transports/index.js'
 
 export type PublicActions<
-  TTransport extends Transport = Transport,
-  TChain extends Chain | undefined = Chain | undefined,
+  T extends {
+    Chain?: Chain | undefined
+    Transport?: Transport
+  } = {
+    Chain: Chain | undefined
+    Transport: Transport
+  },
 > = {
   /**
    * Executes a new message call immediately without submitting a transaction to the network.
@@ -153,7 +158,7 @@ export type PublicActions<
    *   to: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
    * })
    */
-  call: (parameters: CallParameters<TChain>) => Promise<CallReturnType>
+  call: (parameters: CallParameters<T['Chain']>) => Promise<CallReturnType>
   /**
    * Creates a Filter to listen for new block hashes that can be used with [`getFilterChanges`](https://viem.sh/docs/actions/public/getFilterChanges).
    *
@@ -307,7 +312,7 @@ export type PublicActions<
    * })
    */
   estimateGas: (
-    args: EstimateGasParameters<TChain>,
+    args: EstimateGasParameters<T['Chain']>,
   ) => Promise<EstimateGasReturnType>
   /**
    * Returns the balance of an address in wei.
@@ -366,7 +371,9 @@ export type PublicActions<
    * })
    * const block = await client.getBlock()
    */
-  getBlock: (args?: GetBlockParameters) => Promise<GetBlockReturnType<TChain>>
+  getBlock: (
+    args?: GetBlockParameters,
+  ) => Promise<GetBlockReturnType<T['Chain']>>
   /**
    * Returns the number of the most recent block seen.
    *
@@ -844,7 +851,7 @@ export type PublicActions<
    */
   getTransaction: (
     args: GetTransactionParameters,
-  ) => Promise<GetTransactionReturnType<TChain>>
+  ) => Promise<GetTransactionReturnType<T['Chain']>>
   /**
    * Returns the number of blocks passed (confirmations) since the transaction was processed on a block.
    *
@@ -868,7 +875,7 @@ export type PublicActions<
    * })
    */
   getTransactionConfirmations: (
-    args: GetTransactionConfirmationsParameters<TChain>,
+    args: GetTransactionConfirmationsParameters<T['Chain']>,
   ) => Promise<GetTransactionConfirmationsReturnType>
   /**
    * Returns the number of [Transactions](https://viem.sh/docs/glossary/terms#transaction) an Account has broadcast / sent.
@@ -918,7 +925,7 @@ export type PublicActions<
    */
   getTransactionReceipt: (
     args: GetTransactionReceiptParameters,
-  ) => Promise<GetTransactionReceiptReturnType<TChain>>
+  ) => Promise<GetTransactionReceiptReturnType<T['Chain']>>
   /**
    * Similar to [`readContract`](https://viem.sh/docs/contract/readContract), but batches up multiple functions on a contract in a single RPC call via the [`multicall3` contract](https://github.com/mds1/multicall).
    *
@@ -1037,11 +1044,11 @@ export type PublicActions<
     args: SimulateContractParameters<
       TAbi,
       TFunctionName,
-      TChain,
+      T['Chain'],
       TChainOverride
     >,
   ) => Promise<
-    SimulateContractReturnType<TAbi, TFunctionName, TChain, TChainOverride>
+    SimulateContractReturnType<TAbi, TFunctionName, T['Chain'], TChainOverride>
   >
   /**
    * Destroys a Filter that was created from one of the following Actions:
@@ -1107,8 +1114,8 @@ export type PublicActions<
    * })
    */
   waitForTransactionReceipt: (
-    args: WaitForTransactionReceiptParameters<TChain>,
-  ) => Promise<WaitForTransactionReceiptReturnType<TChain>>
+    args: WaitForTransactionReceiptParameters<T['Chain']>,
+  ) => Promise<WaitForTransactionReceiptReturnType<T['Chain']>>
   /**
    * Watches and returns incoming block numbers.
    *
@@ -1161,7 +1168,10 @@ export type PublicActions<
    * })
    */
   watchBlocks: (
-    args: WatchBlocksParameters<TTransport, TChain>,
+    args: WatchBlocksParameters<
+      T['Transport'] extends Transport ? T['Transport'] : Transport,
+      T['Chain']
+    >,
   ) => WatchBlocksReturnType
   /**
    * Watches and returns emitted contract event logs.
@@ -1261,58 +1271,60 @@ export type PublicActions<
    * })
    */
   watchPendingTransactions: (
-    args: WatchPendingTransactionsParameters<TTransport>,
+    args: WatchPendingTransactionsParameters<
+      T['Transport'] extends Transport ? T['Transport'] : Transport
+    >,
   ) => WatchPendingTransactionsReturnType
 }
 
-export const publicActions: <
+export function publicActions<
   TTransport extends Transport = Transport,
   TChain extends Chain | undefined = Chain | undefined,
 >(
-  client: PublicClient<TTransport, TChain>,
-) => PublicActions<TTransport, TChain> = <
-  TTransport extends Transport = Transport,
-  TChain extends Chain | undefined = Chain | undefined,
->(
-  client: PublicClient<TTransport, TChain>,
-): PublicActions<TTransport, TChain> => ({
-  call: (args) => call(client, args),
-  createBlockFilter: () => createBlockFilter(client),
-  createContractEventFilter: (args) => createContractEventFilter(client, args),
-  createEventFilter: (args) => createEventFilter(client, args),
-  createPendingTransactionFilter: () => createPendingTransactionFilter(client),
-  estimateContractGas: (args) => estimateContractGas(client, args),
-  estimateGas: (args) => estimateGas(client, args),
-  getBalance: (args) => getBalance(client, args),
-  getBlock: (args) => getBlock(client, args),
-  getBlockNumber: (args) => getBlockNumber(client, args),
-  getBlockTransactionCount: (args) => getBlockTransactionCount(client, args),
-  getBytecode: (args) => getBytecode(client, args),
-  getChainId: () => getChainId(client),
-  getEnsAddress: (args) => getEnsAddress(client, args),
-  getEnsAvatar: (args) => getEnsAvatar(client, args),
-  getEnsName: (args) => getEnsName(client, args),
-  getEnsResolver: (args) => getEnsResolver(client, args),
-  getEnsText: (args) => getEnsText(client, args),
-  getFeeHistory: (args) => getFeeHistory(client, args),
-  getFilterChanges: (args) => getFilterChanges(client, args),
-  getFilterLogs: (args) => getFilterLogs(client, args),
-  getGasPrice: () => getGasPrice(client),
-  getLogs: (args) => getLogs(client, args),
-  getStorageAt: (args) => getStorageAt(client, args),
-  getTransaction: (args) => getTransaction(client, args),
-  getTransactionConfirmations: (args) =>
-    getTransactionConfirmations(client, args),
-  getTransactionCount: (args) => getTransactionCount(client, args),
-  getTransactionReceipt: (args) => getTransactionReceipt(client, args),
-  multicall: (args) => multicall(client, args),
-  readContract: (args) => readContract(client, args),
-  simulateContract: (args) => simulateContract(client, args),
-  uninstallFilter: (args) => uninstallFilter(client, args),
-  waitForTransactionReceipt: (args) => waitForTransactionReceipt(client, args),
-  watchBlocks: (args) => watchBlocks(client, args),
-  watchBlockNumber: (args) => watchBlockNumber(client, args),
-  watchContractEvent: (args) => watchContractEvent(client, args),
-  watchEvent: (args) => watchEvent(client, args),
-  watchPendingTransactions: (args) => watchPendingTransactions(client, args),
-})
+  client: PublicClient<{ Chain: TChain; Transport: TTransport }>,
+): PublicActions<{ Chain: TChain; Transport: TTransport }> {
+  return {
+    call: (args) => call(client, args),
+    createBlockFilter: () => createBlockFilter(client),
+    createContractEventFilter: (args) =>
+      createContractEventFilter(client, args),
+    createEventFilter: (args) => createEventFilter(client, args),
+    createPendingTransactionFilter: () =>
+      createPendingTransactionFilter(client),
+    estimateContractGas: (args) => estimateContractGas(client, args),
+    estimateGas: (args) => estimateGas(client, args),
+    getBalance: (args) => getBalance(client, args),
+    getBlock: (args) => getBlock(client, args),
+    getBlockNumber: (args) => getBlockNumber(client, args),
+    getBlockTransactionCount: (args) => getBlockTransactionCount(client, args),
+    getBytecode: (args) => getBytecode(client, args),
+    getChainId: () => getChainId(client),
+    getEnsAddress: (args) => getEnsAddress(client, args),
+    getEnsAvatar: (args) => getEnsAvatar(client, args),
+    getEnsName: (args) => getEnsName(client, args),
+    getEnsResolver: (args) => getEnsResolver(client, args),
+    getEnsText: (args) => getEnsText(client, args),
+    getFeeHistory: (args) => getFeeHistory(client, args),
+    getFilterChanges: (args) => getFilterChanges(client, args),
+    getFilterLogs: (args) => getFilterLogs(client, args),
+    getGasPrice: () => getGasPrice(client),
+    getLogs: (args) => getLogs(client, args),
+    getStorageAt: (args) => getStorageAt(client, args),
+    getTransaction: (args) => getTransaction(client, args),
+    getTransactionConfirmations: (args) =>
+      getTransactionConfirmations(client, args),
+    getTransactionCount: (args) => getTransactionCount(client, args),
+    getTransactionReceipt: (args) => getTransactionReceipt(client, args),
+    multicall: (args) => multicall(client, args),
+    readContract: (args) => readContract(client, args),
+    simulateContract: (args) => simulateContract(client, args),
+    uninstallFilter: (args) => uninstallFilter(client, args),
+    waitForTransactionReceipt: (args) =>
+      waitForTransactionReceipt(client, args),
+    watchBlocks: (args) => watchBlocks(client, args),
+    watchBlockNumber: (args) => watchBlockNumber(client, args),
+    watchContractEvent: (args) => watchContractEvent(client, args),
+    watchEvent: (args) => watchEvent(client, args),
+    watchPendingTransactions: (args) => watchPendingTransactions(client, args),
+  }
+}

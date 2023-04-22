@@ -41,8 +41,15 @@ import type { WalletClient } from '../createWalletClient.js'
 import type { Transport } from '../transports/index.js'
 
 export type WalletActions<
-  TChain extends Chain | undefined = Chain | undefined,
-  TAccount extends Account | undefined = Account | undefined,
+  T extends {
+    Account?: Account | undefined
+    Chain?: Chain | undefined
+    Transport?: Transport
+  } = {
+    Account: Account | undefined
+    Chain: Chain | undefined
+    Transport: Transport
+  },
 > = {
   /**
    * Adds an EVM chain to the wallet.
@@ -91,7 +98,12 @@ export type WalletActions<
     TAbi extends Abi | readonly unknown[],
     TChainOverride extends Chain | undefined,
   >(
-    args: DeployContractParameters<TAbi, TChain, TAccount, TChainOverride>,
+    args: DeployContractParameters<
+      TAbi,
+      T['Chain'],
+      T['Account'],
+      TChainOverride
+    >,
   ) => Promise<DeployContractReturnType>
   /**
    * Returns a list of account addresses owned by the wallet or client.
@@ -241,7 +253,7 @@ export type WalletActions<
    * })
    */
   sendTransaction: <TChainOverride extends Chain | undefined>(
-    args: SendTransactionParameters<TChain, TAccount, TChainOverride>,
+    args: SendTransactionParameters<T['Chain'], T['Account'], TChainOverride>,
   ) => Promise<SendTransactionReturnType>
   /**
    * Calculates an Ethereum-specific signature in [EIP-191 format](https://eips.ethereum.org/EIPS/eip-191): `keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))`.
@@ -287,7 +299,7 @@ export type WalletActions<
    * })
    */
   signMessage: (
-    args: SignMessageParameters<TAccount>,
+    args: SignMessageParameters<T['Account']>,
   ) => Promise<SignMessageReturnType>
   /**
    * Signs typed data and calculates an Ethereum-specific signature in [EIP-191 format](https://eips.ethereum.org/EIPS/eip-191): `keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))`.
@@ -389,7 +401,7 @@ export type WalletActions<
     TTypedData extends TypedData | { [key: string]: unknown },
     TPrimaryType extends string,
   >(
-    args: SignTypedDataParameters<TTypedData, TPrimaryType, TAccount>,
+    args: SignTypedDataParameters<TTypedData, TPrimaryType, T['Account']>,
   ) => Promise<SignTypedDataReturnType>
   /**
    * Switch the target chain in a wallet.
@@ -492,37 +504,41 @@ export type WalletActions<
     args: WriteContractParameters<
       TAbi,
       TFunctionName,
-      TChain,
-      TAccount,
+      T['Chain'],
+      T['Account'],
       TChainOverride
     >,
   ) => Promise<WriteContractReturnType>
 }
 
-export const walletActions: <
-  TTransport extends Transport,
+export function walletActions<
+  TTransport extends Transport = Transport,
   TChain extends Chain | undefined = Chain | undefined,
   TAccount extends Account | undefined = Account | undefined,
 >(
-  client: WalletClient<TTransport, TChain, TAccount>,
-) => WalletActions<TChain, TAccount> = <
-  TTransport extends Transport,
-  TChain extends Chain | undefined = Chain | undefined,
-  TAccount extends Account | undefined = Account | undefined,
->(
-  client: WalletClient<TTransport, TChain, TAccount>,
-): WalletActions<TChain, TAccount> => ({
-  addChain: (args) => addChain(client, args),
-  deployContract: (args) => deployContract(client, args),
-  getAddresses: () => getAddresses(client),
-  getChainId: () => getChainId(client),
-  getPermissions: () => getPermissions(client),
-  requestAddresses: () => requestAddresses(client),
-  requestPermissions: (args) => requestPermissions(client, args),
-  sendTransaction: (args) => sendTransaction(client, args),
-  signMessage: (args) => signMessage(client, args),
-  signTypedData: (args) => signTypedData(client, args),
-  switchChain: (args) => switchChain(client, args),
-  watchAsset: (args) => watchAsset(client, args),
-  writeContract: (args) => writeContract(client, args),
-})
+  client: WalletClient<{
+    Account: TAccount
+    Chain: TChain
+    Transport: TTransport
+  }>,
+): WalletActions<{
+  Account: TAccount
+  Chain: TChain
+  Transport: TTransport
+}> {
+  return {
+    addChain: (args) => addChain(client, args),
+    deployContract: (args) => deployContract(client, args),
+    getAddresses: () => getAddresses(client),
+    getChainId: () => getChainId(client),
+    getPermissions: () => getPermissions(client),
+    requestAddresses: () => requestAddresses(client),
+    requestPermissions: (args) => requestPermissions(client, args),
+    sendTransaction: (args) => sendTransaction(client, args),
+    signMessage: (args) => signMessage(client, args),
+    signTypedData: (args) => signTypedData(client, args),
+    switchChain: (args) => switchChain(client, args),
+    watchAsset: (args) => watchAsset(client, args),
+    writeContract: (args) => writeContract(client, args),
+  }
+}

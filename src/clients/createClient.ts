@@ -7,11 +7,16 @@ import type {
 } from './transports/createTransport.js'
 
 export type ClientConfig<
-  TTransport extends Transport = Transport,
-  TChain extends Chain | undefined = Chain | undefined,
+  T extends {
+    Chain: Chain | undefined
+    Transport: Transport
+  } = {
+    Chain: Chain | undefined
+    Transport: Transport
+  },
 > = {
   /** Chain for the client. */
-  chain?: TChain
+  chain?: T['Chain'] extends Chain ? T['Chain'] : Chain
   /** A key for the client. */
   key?: string
   /** A name for the client. */
@@ -22,18 +27,24 @@ export type ClientConfig<
    */
   pollingInterval?: number
   /** The RPC transport */
-  transport: TTransport
+  transport: T['Transport']
   /** The type of client. */
   type?: string
 }
 
 export type Client<
-  TTransport extends Transport = Transport,
-  TRequests extends BaseRpcRequests = Requests,
-  TChain extends Chain | undefined = Chain | undefined,
+  T extends {
+    Chain?: Chain | undefined
+    Requests?: BaseRpcRequests
+    Transport?: Transport
+  } = {
+    Chain: Chain | undefined
+    Requests: Requests
+    Transport: Transport
+  },
 > = {
   /** Chain for the client. */
-  chain: TChain
+  chain: T['Chain']
   /** A key for the client. */
   key: string
   /** A name for the client. */
@@ -41,17 +52,28 @@ export type Client<
   /** Frequency (in ms) for polling enabled actions & events. Defaults to 4_000 milliseconds. */
   pollingInterval: number
   /** Request function wrapped with friendly error handling */
-  request: TRequests['request']
+  request:
+    | (T['Requests'] extends BaseRpcRequests ? T['Requests']['request'] : never)
+    | (T['Requests'] extends undefined ? BaseRpcRequests['request'] : never)
   /** The RPC transport */
-  transport: ReturnType<TTransport>['config'] & ReturnType<TTransport>['value']
+  transport:
+    | (T['Transport'] extends Transport
+        ? ReturnType<T['Transport']>['config'] &
+            ReturnType<T['Transport']>['value']
+        : never)
+    | (T['Transport'] extends undefined
+        ? ReturnType<Transport>['config'] & ReturnType<Transport>['value']
+        : never)
   /** The type of client. */
   type: string
   /** A unique ID for the client. */
   uid: string
 }
 
+type Res = undefined extends undefined ? true : false
+
 /**
- * @description Creates a base client with the given transport.
+ * Creates a base client with the given transport.
  */
 export function createClient<
   TTransport extends Transport,
@@ -64,7 +86,14 @@ export function createClient<
   pollingInterval = 4_000,
   transport,
   type = 'base',
-}: ClientConfig<TTransport, TChain>): Client<TTransport, TRequests, TChain> {
+}: ClientConfig<{
+  Chain: TChain
+  Transport: TTransport
+}>): Client<{
+  Chain: TChain
+  Requests: TRequests
+  Transport: TTransport
+}> {
   const { config, request, value } = transport({ chain, pollingInterval })
   return {
     chain: chain as TChain,

@@ -5,6 +5,7 @@ import type { JsonRpcAccount } from '../types/index.js'
 import type { WalletClient } from './createWalletClient.js'
 import { createWalletClient } from './createWalletClient.js'
 import { http } from './transports/index.js'
+import type { Chain } from '../chains.js'
 
 test('with chain', () => {
   const client = createWalletClient({
@@ -41,4 +42,10 @@ test('without account', () => {
   })
   expectTypeOf(client).toMatchTypeOf<WalletClient>()
   expectTypeOf(client.account).toEqualTypeOf(undefined)
+})
+
+test('declared as WalletClient', () => {
+  const client: WalletClient = createWalletClient({ transport: http() })
+  expectTypeOf(client).toMatchTypeOf<WalletClient>()
+  expectTypeOf(client.chain).toEqualTypeOf<Chain | undefined>()
 })
